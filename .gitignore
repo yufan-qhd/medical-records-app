@@ -1,0 +1,37 @@
+# 依赖
+node_modules/
+
+# 环境变量和密钥（包含 API Key，绝对不能上传）
+.env
+.env.*
+
+# 用户数据（包含个人医疗记录，不能上传）
+*.db
+*.db-shm
+*.db-wal
+
+# 构建产物
+android/app/build/
+ios/DerivedData/
+ios/App/Pods/
+*.xcuserstate
+
+# 系统文件
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+*~
+
+# IDE
+.vscode/
+.idea/
+*.sublime-*
+
+# 日志
+*.log
+npm-debug.log*
+
+# 临时文件
+*.tmp
+*.bak

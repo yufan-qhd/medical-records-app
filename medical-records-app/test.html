@@ -1,0 +1,745 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>医疗档案APP - 测试用例</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', monospace;
+            background: #0F172A;
+            color: #E2E8F0;
+            padding: 32px;
+            line-height: 1.6;
+        }
+        h1 { font-size: 28px; font-weight: 700; color: #F59E0B; margin-bottom: 8px; }
+        .subtitle { color: #94A3B8; margin-bottom: 24px; font-size: 14px; }
+        .summary { display: flex; gap: 16px; margin-bottom: 32px; flex-wrap: wrap; }
+        .summary-card {
+            padding: 20px 28px;
+            border-radius: 16px;
+            font-size: 14px;
+            font-weight: 600;
+        }
+        .summary-card.pass { background: rgba(34,197,94,0.15); color: #22C55E; border: 1px solid rgba(34,197,94,0.3); }
+        .summary-card.fail { background: rgba(239,68,68,0.15); color: #EF4444; border: 1px solid rgba(239,68,68,0.3); }
+        .summary-card.total { background: rgba(245,158,11,0.15); color: #F59E0B; border: 1px solid rgba(245,158,11,0.3); }
+        .summary-card.skip { background: rgba(148,163,184,0.15); color: #94A3B8; border: 1px solid rgba(148,163,184,0.3); }
+        .summary-card .num { font-size: 32px; display: block; margin-bottom: 4px; }
+        .toolbar { display: flex; gap: 12px; margin-bottom: 24px; flex-wrap: wrap; align-items: center; }
+        .run-btn {
+            background: #F59E0B; color: #0F172A; border: none;
+            padding: 12px 28px; border-radius: 9999px;
+            font-size: 15px; font-weight: 700; cursor: pointer;
+            transition: all 0.2s;
+        }
+        .run-btn:hover { transform: scale(0.98); }
+        .run-btn:active { transform: scale(0.95); }
+        .run-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+        .filter-btn {
+            background: #1E293B; color: #94A3B8; border: 1px solid rgba(148,163,184,0.2);
+            padding: 8px 16px; border-radius: 9999px;
+            font-size: 13px; cursor: pointer; transition: all 0.2s;
+        }
+        .filter-btn:hover, .filter-btn.active { color: #F59E0B; border-color: #F59E0B; }
+        .category-tag {
+            display: inline-block; font-size: 11px; padding: 2px 8px;
+            border-radius: 4px; margin-right: 8px; font-weight: 500;
+        }
+        .category-tag.unit { background: rgba(59,130,246,0.15); color: #60A5FA; }
+        .category-tag.integration { background: rgba(168,85,247,0.15); color: #C084FC; }
+        .category-tag.e2e { background: rgba(236,72,153,0.15); color: #F472B6; }
+        .category-tag.manual { background: rgba(245,158,11,0.15); color: #F59E0B; }
+        .suite {
+            margin-bottom: 24px; background: #1E293B;
+            border-radius: 16px; overflow: hidden;
+            border: 1px solid rgba(148,163,184,0.1);
+        }
+        .suite-header {
+            padding: 16px 20px; font-size: 16px; font-weight: 600;
+            color: #F1F5F9; border-bottom: 1px solid rgba(148,163,184,0.1);
+            display: flex; align-items: center; gap: 10px; cursor: pointer;
+        }
+        .suite-header:hover { background: rgba(148,163,184,0.05); }
+        .suite-header .badge {
+            font-size: 12px; padding: 2px 10px;
+            border-radius: 9999px; font-weight: 500;
+        }
+        .suite-header .badge.pass { background: rgba(34,197,94,0.15); color: #22C55E; }
+        .suite-header .badge.fail { background: rgba(239,68,68,0.15); color: #EF4444; }
+        .suite-header .badge.skip { background: rgba(148,163,184,0.15); color: #94A3B8; }
+        .suite-header .arrow { transition: transform 0.2s; font-size: 12px; color: #64748B; }
+        .suite-header .arrow.collapsed { transform: rotate(-90deg); }
+        .suite-body { overflow: hidden; transition: max-height 0.3s; }
+        .suite-body.collapsed { max-height: 0 !important; }
+        .test-item {
+            padding: 12px 20px; display: flex; align-items: center;
+            gap: 12px; font-size: 14px;
+            border-bottom: 1px solid rgba(148,163,184,0.05);
+        }
+        .test-item:last-child { border-bottom: none; }
+        .test-icon {
+            width: 22px; height: 22px; border-radius: 50%;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 12px; flex-shrink: 0;
+        }
+        .test-icon.pass { background: rgba(34,197,94,0.2); color: #22C55E; }
+        .test-icon.fail { background: rgba(239,68,68,0.2); color: #EF4444; }
+        .test-icon.skip { background: rgba(148,163,184,0.2); color: #94A3B8; }
+        .test-name { flex: 1; color: #CBD5E1; }
+        .test-name.skip { color: #64748B; text-decoration: line-through; }
+        .test-error {
+            padding: 8px 20px 12px 54px; font-size: 13px;
+            color: #FCA5A5; background: rgba(239,68,68,0.05);
+        }
+        .test-skip-reason {
+            padding: 8px 20px 12px 54px; font-size: 13px;
+            color: #94A3B8; background: rgba(148,163,184,0.05);
+            font-style: italic;
+        }
+        .progress-bar {
+            height: 4px; background: #1E293B; border-radius: 2px;
+            margin-bottom: 24px; overflow: hidden;
+        }
+        .progress-bar-fill {
+            height: 100%; background: #F59E0B; border-radius: 2px;
+            transition: width 0.3s; width: 0%;
+        }
+    </style>
+</head>
+<body>
+    <h1>医疗档案APP - 测试用例</h1>
+    <p class="subtitle">覆盖核心逻辑、AI服务、认证同步的全功能测试 | 最后更新: 2026-04-16</p>
+
+    <div class="progress-bar"><div class="progress-bar-fill" id="progress-fill"></div></div>
+
+    <div class="toolbar">
+        <button class="run-btn" id="run-btn" onclick="runAllTests()">运行测试</button>
+        <button class="filter-btn active" onclick="filterTests('all', this)">全部</button>
+        <button class="filter-btn" onclick="filterTests('fail', this)">仅失败</button>
+        <button class="filter-btn" onclick="filterTests('skip', this)">待实现</button>
+    </div>
+
+    <div class="summary" id="summary" style="display:none;">
+        <div class="summary-card total"><span class="num" id="total-count">0</span>总计</div>
+        <div class="summary-card pass"><span class="num" id="pass-count">0</span>通过</div>
+        <div class="summary-card fail"><span class="num" id="fail-count">0</span>失败</div>
+        <div class="summary-card skip"><span class="num" id="skip-count">0</span>待实现</div>
+    </div>
+
+    <div id="results"></div>
+
+    <script src="core.js"></script>
+    <script src="image-store.js"></script>
+    <script src="config.js"></script>
+    <script src="api-service.js"></script>
+    <script src="sync-service.js"></script>
+    <script src="ai-service.js"></script>
+    <script>
+    var allResults = [];
+    var currentFilter = 'all';
+
+    function assert(condition, testName, errorMsg) {
+        if (condition) {
+            return { pass: true, name: testName };
+        }
+        return { pass: false, name: testName, error: errorMsg || '断言失败' };
+    }
+
+    function assertEqual(actual, expected, testName) {
+        var actualStr = JSON.stringify(actual);
+        var expectedStr = JSON.stringify(expected);
+        if (actualStr === expectedStr) {
+            return { pass: true, name: testName };
+        }
+        return { pass: false, name: testName, error: '期望: ' + expectedStr + '，实际: ' + actualStr };
+    }
+
+    function assertIncludes(str, keyword, testName) {
+        if (str && str.indexOf(keyword) !== -1) {
+            return { pass: true, name: testName };
+        }
+        return { pass: false, name: testName, error: '字符串 "' + str + '" 不包含 "' + keyword + '"' };
+    }
+
+    function assertNotNull(value, testName) {
+        if (value !== null && value !== undefined) {
+            return { pass: true, name: testName };
+        }
+        return { pass: false, name: testName, error: '值为 null 或 undefined' };
+    }
+
+    function skip(testName, reason) {
+        return { pass: 'skip', name: testName, reason: reason || '待实现' };
+    }
+
+    function defineSuite(name, category, fn) {
+        var tests = [];
+        fn(tests);
+        allResults.push({ name: name, category: category, tests: tests });
+    }
+
+    function runAllTests() {
+        allResults = [];
+        var btn = document.getElementById('run-btn');
+        btn.disabled = true;
+        btn.textContent = '测试中...';
+
+        defineAllSuites();
+
+        var totalPass = 0, totalFail = 0, totalSkip = 0;
+        allResults.forEach(function(suite) {
+            suite.tests.forEach(function(t) {
+                if (t.pass === 'skip') totalSkip++;
+                else if (t.pass === true) totalPass++;
+                else totalFail++;
+            });
+        });
+
+        var total = totalPass + totalFail + totalSkip;
+        document.getElementById('summary').style.display = 'flex';
+        document.getElementById('total-count').textContent = total;
+        document.getElementById('pass-count').textContent = totalPass;
+        document.getElementById('fail-count').textContent = totalFail;
+        document.getElementById('skip-count').textContent = totalSkip;
+        document.getElementById('progress-fill').style.width = (total > 0 ? Math.round(totalPass / total * 100) : 0) + '%';
+
+        renderResults();
+
+        btn.disabled = false;
+        btn.textContent = '重新运行';
+    }
+
+    function defineAllSuites() {
+
+        // ============================================================
+        // 模块1: core.js - 就诊记录解析
+        // ============================================================
+        defineSuite('1. 就诊记录解析 parseRecordFromText', 'unit', function(tests) {
+            var r1 = MedicalApp.parseRecordFromText('我今天感冒去了华西医院');
+            tests.push(assert(r1 !== null, '应返回非null对象'));
+            tests.push(assertEqual(r1.hospital, '未知医院', '医院名称不再正则匹配，未由AI提取时应返回未知医院'));
+            tests.push(assertEqual(r1.diagnosis, '感冒', '应识别感冒诊断'));
+            tests.push(assert(r1.date.match(/^\d{4}-\d{2}-\d{2}$/), '日期格式应为YYYY-MM-DD'));
+
+            var r2 = MedicalApp.parseRecordFromText('去市第一人民医院检查高血压');
+            tests.push(assertEqual(r2.hospital, '未知医院', '医院名称不再正则匹配，应返回未知医院'));
+            tests.push(assertEqual(r2.diagnosis, '高血压', '应识别高血压'));
+
+            var r3 = MedicalApp.parseRecordFromText('今天胃疼去看了消化内科');
+            tests.push(assertEqual(r3.department, '消化内科', '应识别消化内科'));
+
+            var r4 = MedicalApp.parseRecordFromText('随便说点什么');
+            tests.push(assertEqual(r4.hospital, '未知医院', '无匹配医院应返回未知医院'));
+            tests.push(assertEqual(r4.diagnosis, '', '无匹配诊断应返回空字符串'));
+
+            tests.push(assertEqual(MedicalApp.parseRecordFromText(''), null, '空字符串应返回null'));
+            tests.push(assertEqual(MedicalApp.parseRecordFromText(null), null, 'null输入应返回null'));
+            tests.push(assertEqual(MedicalApp.parseRecordFromText(undefined), null, 'undefined输入应返回null'));
+            tests.push(assertEqual(MedicalApp.parseRecordFromText(123), null, '数字输入应返回null'));
+
+            var r5 = MedicalApp.parseRecordFromText('诊断为大叶性肺炎');
+            tests.push(assertEqual(r5.diagnosis, '大叶性肺炎', '应识别"诊断为xxx"格式'));
+
+            var r6 = MedicalApp.parseRecordFromText('在协和医院看骨科，医生：张三');
+            tests.push(assertEqual(r6.hospital, '未知医院', '医院名称不再正则匹配，应返回未知医院'));
+            tests.push(assertEqual(r6.department, '骨科', '应识别骨科'));
+            tests.push(assertEqual(r6.doctor, '张三', '应识别医生姓名'));
+        });
+
+        // ============================================================
+        // 模块2: core.js - 消息分类
+        // ============================================================
+        defineSuite('2. 消息分类 classifyMessage', 'unit', function(tests) {
+            tests.push(assertEqual(MedicalApp.classifyMessage('我今天感冒去了华西医院'), 'record', '含就诊关键词应分类为record'));
+            tests.push(assertEqual(MedicalApp.classifyMessage('去看病了'), 'record', '看病应分类为record'));
+            tests.push(assertEqual(MedicalApp.classifyMessage('发烧了'), 'record', '发烧应分类为record'));
+            tests.push(assertEqual(MedicalApp.classifyMessage('查询最近一次就诊记录'), 'query', '查询应分类为query'));
+            tests.push(assertEqual(MedicalApp.classifyMessage('查看历史记录'), 'query', '查看应分类为query'));
+            tests.push(assertEqual(MedicalApp.classifyMessage('删除这条记录'), 'delete', '删除应分类为delete'));
+            tests.push(assertEqual(MedicalApp.classifyMessage('把刚才的记录删掉'), 'delete', '删掉应分类为delete'));
+            tests.push(assertEqual(MedicalApp.classifyMessage('移除这条就诊信息'), 'delete', '移除应分类为delete'));
+            tests.push(assertEqual(MedicalApp.classifyMessage('你好'), 'general', '普通消息应分类为general'));
+            tests.push(assertEqual(MedicalApp.classifyMessage(''), 'unknown', '空字符串应分类为unknown'));
+            tests.push(assertEqual(MedicalApp.classifyMessage(null), 'unknown', 'null应分类为unknown'));
+        });
+
+        // ============================================================
+        // 模块3: core.js - 统计计算
+        // ============================================================
+        defineSuite('3. 统计计算 calculateStats', 'unit', function(tests) {
+            tests.push(assertEqual(MedicalApp.calculateStats([]).total, 0, '空记录总数应为0'));
+            tests.push(assertEqual(MedicalApp.calculateStats(null).total, 0, 'null输入总数应为0'));
+            tests.push(assertEqual(MedicalApp.calculateStats('invalid').total, 0, '非数组输入总数应为0'));
+
+            var today = new Date().toISOString().split('T')[0];
+            var testRecords = [
+                { id: 1, date: today, hospital: '华西医院', department: '呼吸内科', diagnosis: '感冒' },
+                { id: 2, date: today, hospital: '省人民医院', department: '消化内科', diagnosis: '胃炎' },
+                { id: 3, date: today, hospital: '市第一人民医院', department: '呼吸内科', diagnosis: '上呼吸道感染' },
+                { id: 4, date: today, hospital: '协和医院', department: '心内科', diagnosis: '高血压' }
+            ];
+            var stats = MedicalApp.calculateStats(testRecords);
+            tests.push(assertEqual(stats.total, 4, '4条记录总数应为4'));
+            tests.push(assertEqual(stats.halfYear, 4, '近期4条记录半年数应为4'));
+            tests.push(assertEqual(stats.topDepartment, '呼吸内科', '热门科室应为呼吸内科'));
+            tests.push(assertEqual(stats.diagnosisCounts['感冒'], 1, '感冒诊断次数应为1'));
+
+            var oldDate = '2020-01-01';
+            var mixedRecords = [
+                { id: 1, date: today, hospital: '华西医院', department: '呼吸内科', diagnosis: '感冒' },
+                { id: 2, date: oldDate, hospital: '省人民医院', department: '消化内科', diagnosis: '胃炎' }
+            ];
+            tests.push(assertEqual(MedicalApp.calculateStats(mixedRecords).halfYear, 1, '仅1条近期记录'));
+
+            var pendingRecords = [
+                { id: 1, date: today, hospital: '华西医院', department: '', diagnosis: '' }
+            ];
+            var pendingStats = MedicalApp.calculateStats(pendingRecords);
+            tests.push(assertEqual(pendingStats.topDepartment, '', '无科室信息时热门科室应为空'));
+            tests.push(assertEqual(Object.keys(pendingStats.diagnosisCounts).length, 0, '空诊断不应计入统计'));
+        });
+
+        // ============================================================
+        // 模块4: core.js - 输入验证
+        // ============================================================
+        defineSuite('4. 输入验证 validatePhone / validateCode / maskPhone', 'unit', function(tests) {
+            tests.push(assertEqual(MedicalApp.validatePhone('13812345678'), true, '有效手机号应通过'));
+            tests.push(assertEqual(MedicalApp.validatePhone('15000000000'), true, '15开头应通过'));
+            tests.push(assertEqual(MedicalApp.validatePhone('02345678901'), false, '0开头应不通过'));
+            tests.push(assertEqual(MedicalApp.validatePhone('1381234567'), false, '10位应不通过'));
+            tests.push(assertEqual(MedicalApp.validatePhone(''), false, '空字符串应不通过'));
+            tests.push(assertEqual(MedicalApp.validatePhone(null), false, 'null应不通过'));
+
+            tests.push(assertEqual(MedicalApp.validateCode('1234'), true, '4位验证码应通过'));
+            tests.push(assertEqual(MedicalApp.validateCode('123456'), true, '6位验证码应通过'));
+            tests.push(assertEqual(MedicalApp.validateCode('123'), false, '3位应不通过'));
+            tests.push(assertEqual(MedicalApp.validateCode(''), false, '空字符串应不通过'));
+
+            tests.push(assertEqual(MedicalApp.maskPhone('13812345678'), '138****5678', '应正确脱敏'));
+            tests.push(assertEqual(MedicalApp.maskPhone('123'), '123', '不足11位应原样返回'));
+            tests.push(assertEqual(MedicalApp.maskPhone(null), null, 'null应原样返回'));
+        });
+
+        // ============================================================
+        // 模块5: core.js - 安全与持久化
+        // ============================================================
+        defineSuite('5. 安全与持久化 escapeHtml / localStorage', 'unit', function(tests) {
+            tests.push(assertEqual(MedicalApp.escapeHtml('<script>alert(1)<\/script>'), '&lt;script&gt;alert(1)&lt;/script&gt;', '应转义HTML标签'));
+            tests.push(assertEqual(MedicalApp.escapeHtml('正常文本'), '正常文本', '正常文本不应变化'));
+            tests.push(assertEqual(MedicalApp.escapeHtml('a & b'), 'a &amp; b', '应转义&符号'));
+            tests.push(assertEqual(MedicalApp.escapeHtml(''), '', '空字符串应返回空'));
+            tests.push(assertEqual(MedicalApp.escapeHtml(null), '', 'null应返回空'));
+
+            localStorage.removeItem('medicalRecords');
+            tests.push(assertEqual(MedicalApp.loadRecords().length, 0, '无存储时加载应为空数组'));
+
+            var today = new Date().toISOString().split('T')[0];
+            MedicalApp.saveRecords([{ id: 1, date: today, hospital: '测试医院', diagnosis: '测试诊断' }]);
+            var loaded = MedicalApp.loadRecords();
+            tests.push(assertEqual(loaded.length, 1, '保存后加载应有1条记录'));
+            tests.push(assertEqual(loaded[0].hospital, '测试医院', '保存的医院名称应一致'));
+
+            localStorage.setItem('medicalRecords', 'invalid json');
+            tests.push(assertEqual(MedicalApp.loadRecords().length, 0, '无效JSON应返回空数组'));
+            localStorage.removeItem('medicalRecords');
+        });
+
+        // ============================================================
+        // 模块6: core.js - 系统响应生成
+        // ============================================================
+        defineSuite('6. 系统响应生成 generateSystemResponse', 'unit', function(tests) {
+            var today = new Date().toISOString().split('T')[0];
+            var testRecords = [
+                { id: 1, date: today, hospital: '华西医院', department: '呼吸内科', diagnosis: '感冒' }
+            ];
+
+            var r1 = MedicalApp.generateSystemResponse('我今天感冒去了华西医院', testRecords);
+            tests.push(assertEqual(r1.type, 'record', '就诊消息响应类型应为record'));
+            tests.push(assertIncludes(r1.message, '记录', '响应消息应包含记录关键词'));
+            tests.push(assertEqual(r1.record.hospital, '未知医院', '本地降级模式医院名称不再正则匹配'));
+
+            var r2 = MedicalApp.generateSystemResponse('查询最近记录', testRecords);
+            tests.push(assertEqual(r2.type, 'query', '查询消息响应类型应为query'));
+
+            var r3 = MedicalApp.generateSystemResponse('你好', testRecords);
+            tests.push(assertEqual(r3.type, 'general', '普通消息响应类型应为general'));
+
+            var r4 = MedicalApp.generateSystemResponse('查询记录', []);
+            tests.push(assertEqual(r4.type, 'query', '空记录查询类型应为query'));
+
+            var r5 = MedicalApp.generateSystemResponse('删除这条记录', testRecords);
+            tests.push(assertEqual(r5.type, 'delete', '删除消息响应类型应为delete'));
+
+            var r6 = MedicalApp.generateSystemResponse('删掉记录', []);
+            tests.push(assertEqual(r6.type, 'delete', '空记录删除类型应为delete'));
+            tests.push(assertEqual(r6.record, null, '空记录删除时record应为null'));
+        });
+
+        // ============================================================
+        // 模块7: AI 服务 - 对话接口
+        // ============================================================
+        defineSuite('7. AI对话服务 AIService.chat', 'integration', function(tests) {
+            tests.push(assert(typeof AIService !== 'undefined', 'AIService 应已加载'));
+            tests.push(assert(typeof AIService.chat === 'function', 'chat 方法应存在'));
+            tests.push(assert(typeof AIService.extractRecord === 'function', 'extractRecord 方法应存在'));
+            tests.push(assert(typeof AIService.clearHistory === 'function', 'clearHistory 方法应存在'));
+            tests.push(assert(typeof AIService.getHistory === 'function', 'getHistory 方法应存在'));
+
+            tests.push(skip('AI对话 - 发送普通消息应返回自然语言回复', '需要API Key和网络'));
+            tests.push(skip('AI对话 - 流式输出应逐chunk回调', '需要API Key和网络'));
+            tests.push(skip('AI对话 - 对话历史应正确维护', '需要API Key和网络'));
+            tests.push(skip('AI对话 - API不可用时应触发onError回调', '需要模拟API故障'));
+        });
+
+        // ============================================================
+        // 模块8: AI 服务 - 记录提取
+        // ============================================================
+        defineSuite('8. AI记录提取 AIService.extractRecord', 'integration', function(tests) {
+            tests.push(skip('提取 - "去了华西医院看感冒" 应提取 hospital=华西医院', '需要API Key和网络'));
+            tests.push(skip('提取 - "随便聊聊" 应返回 null', '需要API Key和网络'));
+            tests.push(skip('提取 - 提取失败时应回调 null', '需要模拟API故障'));
+            tests.push(skip('提取 - 返回JSON格式不标准时应容错解析', '需要API Key和网络'));
+            tests.push(skip('提取 - is_new_visit默认应为false', '需要API Key和网络'));
+            tests.push(skip('提取 - 明确提到另一次就诊时is_new_visit应为true', '需要API Key和网络'));
+            tests.push(skip('提取 - complaint应为AI总结的医学术语，非用户原话', '需要API Key和网络'));
+            tests.push(skip('提取 - 未识别医院时hospital应为空字符串', '需要API Key和网络'));
+            tests.push(skip('提取 - 应提取medication用药信息字段', '需要API Key和网络'));
+            tests.push(skip('提取 - 应提取examination检查项目字段', '需要API Key和网络'));
+        });
+
+        // ============================================================
+        // 模块8.5: 多轮对话记录合并
+        // ============================================================
+        defineSuite('8.5 多轮对话记录合并 mergeRecordData', 'unit', function(tests) {
+            tests.push(assert(typeof MedicalApp.mergeRecordData === 'function', 'mergeRecordData 方法应存在'));
+
+            var base = { hospital: '华西医院', department: '', diagnosis: '', complaint: '腹痛', medication: '', examination: '' };
+            var update = { hospital: '华西医院', department: '消化内科', diagnosis: '急性胃肠炎', complaint: '', medication: '阿莫西林', examination: '' };
+            var merged = MedicalApp.mergeRecordData(base, update);
+            tests.push(assertEqual(merged.hospital, '华西医院', '医院名称应保持'));
+            tests.push(assertEqual(merged.department, '消化内科', '科室应更新'));
+            tests.push(assertEqual(merged.diagnosis, '急性胃肠炎', '诊断应更新'));
+            tests.push(assertEqual(merged.complaint, '腹痛', '主诉非空应保持'));
+            tests.push(assertEqual(merged.medication, '阿莫西林', '用药应更新'));
+
+            var base2 = { hospital: '未知医院', department: '', diagnosis: '', complaint: '', medication: '', examination: '' };
+            var update2 = { hospital: '省人民医院', department: '心内科', diagnosis: '高血压', complaint: '头晕', medication: '', examination: '' };
+            var merged2 = MedicalApp.mergeRecordData(base2, update2);
+            tests.push(assertEqual(merged2.hospital, '省人民医院', '未知医院应被AI提取的医院覆盖'));
+            tests.push(assertEqual(merged2.complaint, '头晕', '主诉应更新'));
+        });
+
+        // ============================================================
+        // 模块9: 语音输入
+        // ============================================================
+        defineSuite('9. 语音输入功能', 'e2e', function(tests) {
+            var hasWebSpeech = 'webkitSpeechRecognition' in window || 'SpeechRecognition' in window;
+            var hasCapacitorVoice = !!(window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.SpeechRecognition);
+            tests.push(assert(hasWebSpeech || hasCapacitorVoice, '应支持Web Speech API或Capacitor原生语音识别'));
+
+            tests.push(skip('语音 - 长按语音按钮300ms后应开始录音', '需要模拟touch/mouse事件'));
+            tests.push(skip('语音 - 录音中按钮应显示recording状态', '需要DOM交互'));
+            tests.push(skip('语音 - 录音中按钮标签应显示录制秒数', '需要DOM交互'));
+            tests.push(skip('语音 - 录音达到120秒应自动停止', '需要模拟计时器'));
+            tests.push(skip('语音 - 松开按钮应停止录音', '需要模拟touch/mouse事件'));
+            tests.push(skip('语音 - 识别结果应实时显示在输入框中', '需要模拟SpeechRecognition'));
+            tests.push(skip('语音 - 松开按钮后识别文字应回填至输入框不自动发送', '需要DOM交互'));
+            tests.push(skip('语音 - continuous模式下onend应自动重启识别', '需要模拟SpeechRecognition'));
+            tests.push(skip('语音 - 不支持语音时应优雅降级', '需要模拟不支持的环境'));
+            tests.push(skip('语音 - 录音中上划超过80px应进入取消状态', '需要模拟touch/mouse事件'));
+            tests.push(skip('语音 - 取消状态下按钮应变灰+提示松手取消', '需要DOM交互'));
+            tests.push(skip('语音 - 取消状态下松手应清空输入框', '需要DOM交互'));
+            tests.push(skip('语音 - 取消状态下下划回80px内应恢复录音', '需要模拟touch/mouse事件'));
+            tests.push(skip('语音 - 仅致命错误(not-allowed等)才停止录音', '需要模拟SpeechRecognition'));
+            tests.push(skip('语音 - Capacitor插件模式下应请求权限后开始识别', '需要原生环境'));
+        });
+
+        // ============================================================
+        // 模块10: 图片上传与存储
+        // ============================================================
+        defineSuite('10. 图片上传与存储 ImageStore', 'unit', function(tests) {
+            tests.push(assert(typeof ImageStore !== 'undefined', 'ImageStore 应已加载'));
+            tests.push(assert(typeof ImageStore.openDB === 'function', 'openDB 方法应存在'));
+            tests.push(assert(typeof ImageStore.saveImage === 'function', 'saveImage 方法应存在'));
+            tests.push(assert(typeof ImageStore.getImage === 'function', 'getImage 方法应存在'));
+            tests.push(assert(typeof ImageStore.deleteImage === 'function', 'deleteImage 方法应存在'));
+            tests.push(assert(typeof ImageStore.getImagesByRecordId === 'function', 'getImagesByRecordId 方法应存在'));
+            tests.push(assert(typeof ImageStore.updateImageRecordId === 'function', 'updateImageRecordId 方法应存在'));
+            tests.push(assert(typeof ImageStore.compressImage === 'function', 'compressImage 方法应存在'));
+            tests.push(assert(typeof indexedDB !== 'undefined', '浏览器应支持IndexedDB'));
+
+            tests.push(skip('上传 - 点击+按钮应弹出上传菜单', '需要DOM交互'));
+            tests.push(skip('上传 - 选择图片后应显示预览缩略图', '需要DOM交互'));
+            tests.push(skip('上传 - 点击预览缩略图×应移除图片', '需要DOM交互'));
+            tests.push(skip('上传 - 非图片文件应被过滤', '需要模拟File对象'));
+            tests.push(skip('上传 - 超过20MB的文件应被过滤', '需要模拟大文件'));
+            tests.push(skip('存储 - 图片应保存到IndexedDB', '需要异步测试'));
+            tests.push(skip('存储 - 按recordId查询应返回关联图片', '需要异步测试'));
+            tests.push(skip('存储 - 删除图片应从IndexedDB移除', '需要异步测试'));
+            tests.push(skip('压缩 - 大图应被压缩到1200px宽度', '需要模拟图片文件'));
+            tests.push(skip('查看器 - 点击缩略图应打开全屏查看', '需要DOM交互'));
+            tests.push(skip('查看器 - 点击关闭应退出全屏', '需要DOM交互'));
+        });
+
+        // ============================================================
+        // 模块11: 记录管理
+        // ============================================================
+        defineSuite('11. 记录管理 - 列表与详情', 'integration', function(tests) {
+            tests.push(skip('列表 - 应正确渲染所有记录', '需要DOM交互'));
+            tests.push(skip('列表 - 无记录时应显示空状态', '需要DOM交互'));
+            tests.push(skip('列表 - 点击记录应打开详情面板', '需要DOM交互'));
+            tests.push(skip('卡片 - 应展示医院名+日期+主诉+科室(可选)', '需要DOM交互'));
+            tests.push(skip('卡片 - 主诉应为AI总结的医学术语', '需要DOM交互'));
+            tests.push(skip('卡片 - 诊断字段为空时不应显示', '需要DOM交互'));
+            tests.push(skip('详情 - 详情面板应展示所有字段(含用药、检查)', '需要DOM交互'));
+            tests.push(skip('详情 - 空字段不应在详情中显示', '需要DOM交互'));
+            tests.push(skip('详情 - 点击返回应关闭详情面板', '需要DOM交互'));
+            tests.push(skip('删除 - 应能删除指定记录', '功能待实现'));
+            tests.push(skip('编辑 - 应能编辑已有记录', '功能待实现'));
+        });
+
+        // ============================================================
+        // 模块12: 手动添加记录
+        // ============================================================
+        defineSuite('12. 手动添加记录', 'integration', function(tests) {
+            tests.push(skip('表单 - 应包含日期/医院/科室/诊断等字段', '需要DOM交互'));
+            tests.push(skip('表单 - 日期默认应为今天', '需要DOM交互'));
+            tests.push(skip('保存 - 填写完整信息后应成功保存', '需要DOM交互'));
+            tests.push(skip('保存 - 保存后记录列表应更新', '需要DOM交互'));
+            tests.push(skip('验证 - 必填字段为空时应提示', '功能待完善'));
+        });
+
+        // ============================================================
+        // 模块13: 统计面板
+        // ============================================================
+        defineSuite('13. 统计面板', 'integration', function(tests) {
+            tests.push(skip('统计 - 应正确显示总就诊次数', '需要DOM交互'));
+            tests.push(skip('统计 - 应正确显示半年就诊次数', '需要DOM交互'));
+            tests.push(skip('统计 - 应显示热门科室分析', '需要DOM交互'));
+            tests.push(skip('统计 - 应显示诊断标签', '需要DOM交互'));
+            tests.push(skip('统计 - 无记录时应显示提示', '需要DOM交互'));
+        });
+
+        // ============================================================
+        // 模块14: 认证服务 ApiService
+        // ============================================================
+        defineSuite('14. 认证服务 ApiService', 'unit', function(tests) {
+            tests.push(assert(typeof ApiService !== 'undefined', 'ApiService 应存在'));
+            tests.push(assert(typeof ApiService.register === 'function', 'register 方法应存在'));
+            tests.push(assert(typeof ApiService.login === 'function', 'login 方法应存在'));
+            tests.push(assert(typeof ApiService.sendVerifyCode === 'function', 'sendVerifyCode 方法应存在'));
+            tests.push(assert(typeof ApiService.loginWithPhone === 'function', 'loginWithPhone 方法应存在'));
+            tests.push(assert(typeof ApiService.loginWithWechat === 'function', 'loginWithWechat 方法应存在'));
+            tests.push(assert(typeof ApiService.logout === 'function', 'logout 方法应存在'));
+            tests.push(assert(typeof ApiService.isLoggedIn === 'function', 'isLoggedIn 方法应存在'));
+            tests.push(assert(typeof ApiService.getToken === 'function', 'getToken 方法应存在'));
+            tests.push(assert(typeof ApiService.getUser === 'function', 'getUser 方法应存在'));
+            tests.push(assert(typeof ApiService.getRecords === 'function', 'getRecords 方法应存在'));
+            tests.push(assert(typeof ApiService.createRecord === 'function', 'createRecord 方法应存在'));
+            tests.push(assert(typeof ApiService.updateRecord === 'function', 'updateRecord 方法应存在'));
+            tests.push(assert(typeof ApiService.deleteRecord === 'function', 'deleteRecord 方法应存在'));
+            tests.push(assert(typeof ApiService.syncPull === 'function', 'syncPull 方法应存在'));
+            tests.push(assert(typeof ApiService.syncPush === 'function', 'syncPush 方法应存在'));
+
+            ApiService.logout();
+            tests.push(assertEqual(ApiService.isLoggedIn(), false, '登出后应未登录'));
+            tests.push(assertEqual(ApiService.getToken(), '', '登出后token应为空'));
+            tests.push(assertEqual(ApiService.getUser(), null, '登出后user应为null'));
+        });
+
+        // ============================================================
+        // 模块15: 数据同步服务 SyncService
+        // ============================================================
+        defineSuite('15. 数据同步服务 SyncService', 'unit', function(tests) {
+            tests.push(assert(typeof SyncService !== 'undefined', 'SyncService 应存在'));
+            tests.push(assert(typeof SyncService.sync === 'function', 'sync 方法应存在'));
+            tests.push(assert(typeof SyncService.startAutoSync === 'function', 'startAutoSync 方法应存在'));
+            tests.push(assert(typeof SyncService.stopAutoSync === 'function', 'stopAutoSync 方法应存在'));
+            tests.push(assert(typeof SyncService.pullFromServer === 'function', 'pullFromServer 方法应存在'));
+            tests.push(assert(typeof SyncService.pushToServer === 'function', 'pushToServer 方法应存在'));
+            tests.push(assert(typeof SyncService.getLocalRecords === 'function', 'getLocalRecords 方法应存在'));
+            tests.push(assert(typeof SyncService.saveLocalRecords === 'function', 'saveLocalRecords 方法应存在'));
+            tests.push(assert(typeof SyncService.saveRecord === 'function', 'saveRecord 方法应存在'));
+            tests.push(assert(typeof SyncService.deleteLocalRecord === 'function', 'deleteLocalRecord 方法应存在'));
+            tests.push(assert(typeof SyncService.getLastSyncTime === 'function', 'getLastSyncTime 方法应存在'));
+            tests.push(assert(typeof SyncService.getPendingChanges === 'function', 'getPendingChanges 方法应存在'));
+
+            localStorage.removeItem('medical_records');
+            localStorage.removeItem('pending_changes');
+            tests.push(assert(Array.isArray(SyncService.getLocalRecords()), 'getLocalRecords 应返回数组'));
+            tests.push(assertEqual(SyncService.getLocalRecords().length, 0, '空存储时记录应为0'));
+            tests.push(assert(Array.isArray(SyncService.getPendingChanges()), 'getPendingChanges 应返回数组'));
+            tests.push(assertEqual(SyncService.getPendingChanges().length, 0, '空存储时待推送应为0'));
+
+            var testRecord = { id: 'test_1', date: '2026-04-15', hospital: '测试医院', diagnosis: '测试诊断' };
+            SyncService.saveLocalRecords([testRecord]);
+            tests.push(assertEqual(SyncService.getLocalRecords().length, 1, '保存1条记录后应有1条'));
+            tests.push(assertEqual(SyncService.getLocalRecords()[0].hospital, '测试医院', '保存的医院名称应一致'));
+
+            var testRecord2 = { id: 'test_2', date: '2026-04-14', hospital: '测试医院2', diagnosis: '测试诊断2' };
+            SyncService.saveRecord(testRecord2);
+            tests.push(assertEqual(SyncService.getLocalRecords().length, 2, 'saveRecord后应有2条'));
+
+            SyncService.deleteLocalRecord('test_1');
+            tests.push(assertEqual(SyncService.getLocalRecords().length, 1, '删除后应有1条'));
+            tests.push(assertEqual(SyncService.getLocalRecords()[0].id, 'test_2', '剩余记录应为test_2'));
+
+            localStorage.removeItem('medical_records');
+            localStorage.removeItem('pending_changes');
+        });
+
+        // ============================================================
+        // 模块16: AppConfig 配置
+        // ============================================================
+        defineSuite('16. 应用配置 AppConfig', 'unit', function(tests) {
+            tests.push(assert(typeof AppConfig !== 'undefined', 'AppConfig 应存在'));
+            tests.push(assert(typeof AppConfig.API_BASE_URL === 'string', 'API_BASE_URL 应为字符串'));
+            tests.push(assert(typeof AppConfig.MODEL === 'string', 'MODEL 应为字符串'));
+            tests.push(assert(typeof AppConfig.MAX_TOKENS === 'number', 'MAX_TOKENS 应为数字'));
+            tests.push(assert(typeof AppConfig.TEMPERATURE === 'number', 'TEMPERATURE 应为数字'));
+            tests.push(assert(typeof AppConfig.STREAM === 'boolean', 'STREAM 应为布尔值'));
+            tests.push(assert(AppConfig.API_BASE_URL.indexOf('api/ai') !== -1, 'API_BASE_URL 应包含 api/ai'));
+            tests.push(assert(AppConfig.API_BASE_URL.indexOf('sk-') === -1, 'API_BASE_URL 不应包含API Key'));
+        });
+
+        // ============================================================
+        // 模块17: 后端API集成测试
+        // ============================================================
+        defineSuite('17. 后端API集成测试', 'integration', function(tests) {
+            var apiBase = AppConfig.API_BASE_URL.replace('/api/ai', '/api');
+            tests.push(assert(typeof fetch === 'function', 'fetch API 应可用'));
+
+            tests.push(skip('POST /api/auth/send-code - 发送验证码', '异步测试需手动验证'));
+            tests.push(skip('POST /api/auth/login-phone - 手机号验证码登录', '异步测试需手动验证'));
+            tests.push(skip('POST /api/auth/login-wechat - 微信登录', '异步测试需手动验证'));
+            tests.push(skip('GET /api/auth/me - 获取用户信息', '异步测试需手动验证'));
+            tests.push(skip('POST /api/records - 创建记录', '异步测试需手动验证'));
+            tests.push(skip('GET /api/records - 获取记录列表', '异步测试需手动验证'));
+            tests.push(skip('PUT /api/records/:id - 更新记录', '异步测试需手动验证'));
+            tests.push(skip('DELETE /api/records/:id - 删除记录', '异步测试需手动验证'));
+            tests.push(skip('GET /api/sync/pull - 拉取同步数据', '异步测试需手动验证'));
+            tests.push(skip('POST /api/sync/push - 推送同步数据', '异步测试需手动验证'));
+            tests.push(skip('GET /api/audit - 获取审计日志', '异步测试需手动验证'));
+        });
+
+        // ============================================================
+        // 模块18: 侧边栏
+        // ============================================================
+        defineSuite('18. 侧边栏', 'integration', function(tests) {
+            tests.push(skip('侧边栏 - 点击菜单按钮应打开', '需要DOM交互'));
+            tests.push(skip('侧边栏 - 点击遮罩应关闭', '需要DOM交互'));
+            tests.push(skip('侧边栏 - 点击历史记录应打开记录面板', '需要DOM交互'));
+            tests.push(skip('侧边栏 - 点击统计应打开统计面板', '需要DOM交互'));
+        });
+
+        // ============================================================
+        // 模块19: 聊天界面
+        // ============================================================
+        defineSuite('19. 聊天界面交互', 'e2e', function(tests) {
+            tests.push(skip('发送 - 输入文字后点击发送应发送消息', '需要DOM交互'));
+            tests.push(skip('发送 - 空输入不应发送', '需要DOM交互'));
+            tests.push(skip('发送 - AI回复中应禁用输入', '需要DOM交互'));
+            tests.push(skip('输入框 - Enter应发送消息', '需要DOM交互'));
+            tests.push(skip('输入框 - Shift+Enter应换行', '需要DOM交互'));
+            tests.push(skip('输入框 - 中文输入法组合中Enter不应发送', '需要模拟composition事件'));
+            tests.push(skip('输入框 - 多行内容输入框应自动增高', '需要DOM交互'));
+            tests.push(skip('流式 - AI回复应有打字机效果', '需要DOM交互'));
+            tests.push(skip('记录卡片 - AI识别就诊后应追加记录卡片', '需要DOM交互'));
+            tests.push(skip('欢迎页 - 无消息时应显示欢迎页', '需要DOM交互'));
+            tests.push(skip('欢迎页 - 有消息后应隐藏欢迎页', '需要DOM交互'));
+        });
+
+        // ============================================================
+        // 模块20: 数据完整性
+        // ============================================================
+        defineSuite('20. 数据完整性', 'integration', function(tests) {
+            tests.push(assertEqual(MedicalApp.escapeHtml('<script>alert(1)<\/script>'), '&lt;script&gt;alert(1)&lt;/script&gt;', 'XSS - script标签应被转义'));
+            tests.push(assertEqual(MedicalApp.escapeHtml('<img onerror=alert(1) src=x>'), '&lt;img onerror=alert(1) src=x&gt;', 'XSS - img标签应被转义'));
+            tests.push(assertEqual(MedicalApp.escapeHtml('正常文本'), '正常文本', '正常文本不应变化'));
+
+            var id1 = 'rec_' + Date.now() + '_1';
+            var id2 = 'rec_' + Date.now() + '_2';
+            tests.push(assert(id1 !== id2, '记录ID应唯一'));
+            tests.push(assert(id1.indexOf('rec_') === 0, '记录ID应以rec_开头'));
+
+            var dateStr = new Date().toISOString().split('T')[0];
+            tests.push(assert(dateStr.match(/^\d{4}-\d{2}-\d{2}$/), '日期格式应为YYYY-MM-DD'));
+        });
+    }
+
+    function renderResults() {
+        var html = '';
+        allResults.forEach(function(suite, idx) {
+            var suitePass = suite.tests.filter(function(t) { return t.pass === true; }).length;
+            var suiteFail = suite.tests.filter(function(t) { return t.pass === false; }).length;
+            var suiteSkip = suite.tests.filter(function(t) { return t.pass === 'skip'; }).length;
+            var allPass = suiteFail === 0;
+
+            var badgeClass = suiteFail > 0 ? 'fail' : (suiteSkip === suite.tests.length ? 'skip' : 'pass');
+            var badgeText = suitePass + '/' + suite.tests.length + ' 通过';
+            if (suiteSkip > 0) badgeText += ' | ' + suiteSkip + ' 待实现';
+
+            html += '<div class="suite" data-suite-idx="' + idx + '">';
+            html += '<div class="suite-header" onclick="toggleSuite(' + idx + ')">';
+            html += '<span class="arrow" id="arrow-' + idx + '">&#9660;</span>';
+            html += '<span class="category-tag ' + suite.category + '">' + suite.category + '</span>';
+            html += suite.name;
+            html += ' <span class="badge ' + badgeClass + '">' + badgeText + '</span>';
+            html += '</div>';
+            html += '<div class="suite-body" id="suite-body-' + idx + '">';
+
+            suite.tests.forEach(function(test) {
+                var show = currentFilter === 'all' ||
+                           (currentFilter === 'fail' && test.pass === false) ||
+                           (currentFilter === 'skip' && test.pass === 'skip');
+                if (!show) return;
+
+                if (test.pass === 'skip') {
+                    html += '<div class="test-item">';
+                    html += '<div class="test-icon skip">-</div>';
+                    html += '<span class="test-name skip">' + test.name + '</span>';
+                    html += '</div>';
+                    html += '<div class="test-skip-reason">' + test.reason + '</div>';
+                } else {
+                    html += '<div class="test-item">';
+                    html += '<div class="test-icon ' + (test.pass ? 'pass' : 'fail') + '">';
+                    html += test.pass ? '&#10003;' : '&#10007;';
+                    html += '</div>';
+                    html += '<span class="test-name">' + test.name + '</span>';
+                    html += '</div>';
+                    if (!test.pass) {
+                        html += '<div class="test-error">' + test.error + '</div>';
+                    }
+                }
+            });
+
+            html += '</div></div>';
+        });
+
+        document.getElementById('results').innerHTML = html;
+    }
+
+    function toggleSuite(idx) {
+        var body = document.getElementById('suite-body-' + idx);
+        var arrow = document.getElementById('arrow-' + idx);
+        if (body.classList.contains('collapsed')) {
+            body.classList.remove('collapsed');
+            body.style.maxHeight = body.scrollHeight + 'px';
+            arrow.classList.remove('collapsed');
+        } else {
+            body.classList.add('collapsed');
+            arrow.classList.add('collapsed');
+        }
+    }
+
+    function filterTests(filter, btn) {
+        currentFilter = filter;
+        document.querySelectorAll('.filter-btn').forEach(function(b) { b.classList.remove('active'); });
+        btn.classList.add('active');
+        if (allResults.length > 0) renderResults();
+    }
+    </script>
+</body>
+</html>

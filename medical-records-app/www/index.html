@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>医疗档案</title>
+    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+</head>
+<body>
+    <div id="app">
+        <!-- 登录界面 -->
+        <div id="login-screen" class="screen active">
+            <div class="login-header">
+                <button id="login-close-btn" class="icon-btn"><i class="fas fa-times"></i></button>
+            </div>
+            <div class="login-content">
+                <h2>欢迎登录</h2>
+                <p class="login-subtitle">登录后管理您的专属医疗档案</p>
+                <div class="login-form">
+                    <div class="login-input-group">
+                        <span class="phone-prefix">+86</span>
+                        <input type="tel" id="login-phone" placeholder="请输入手机号" maxlength="11" />
+                    </div>
+                    <div class="login-input-group">
+                        <input type="text" id="login-code" placeholder="请输入验证码" maxlength="6" />
+                        <button id="send-code-btn" class="send-code-btn">获取验证码</button>
+                    </div>
+                    <button id="login-btn" class="btn-primary">登录</button>
+                </div>
+                <div class="third-party-login">
+                    <div class="divider-line"><span>其他登录方式</span></div>
+                    <button id="wechat-login-btn" class="wechat-btn"><i class="fab fa-weixin"></i></button>
+                </div>
+            </div>
+        </div>
+
+        <!-- 主界面 -->
+        <div id="main-screen" class="screen">
+            <div class="header">
+                <button id="drawer-btn" class="icon-btn"><i class="fas fa-bars"></i></button>
+                <h1>医疗档案</h1>
+                <div class="header-spacer"></div>
+            </div>
+
+            <div id="main-chat-messages" class="chat-messages">
+                <div id="welcome-container" class="welcome-container">
+                    <div class="welcome-icon">
+                        <i class="fas fa-robot"></i>
+                    </div>
+                    <h3>欢迎使用医疗档案助手</h3>
+                    <p>您可以直接向我发送语音或文字，我会为您智能整理就诊记录、分析健康趋势。</p>
+                    <div class="quick-actions">
+                        <button class="quick-action-btn" data-text="帮我记录今天的感冒症状">
+                            <div class="quick-action-icon"><i class="fas fa-thermometer-half"></i></div>
+                            <span>帮我记录今天的感冒症状</span>
+                        </button>
+                        <button class="quick-action-btn" data-text="查询最近一次就诊记录">
+                            <div class="quick-action-icon"><i class="fas fa-search"></i></div>
+                            <span>查询最近一次就诊记录</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="bottom-input-bar">
+                <div id="image-preview-bar" class="image-preview-bar" style="display:none;"></div>
+                <div class="input-bar-inner">
+                    <button id="upload-image-btn" class="input-bar-add"><i class="fas fa-plus"></i></button>
+                    <textarea id="main-chat-input" placeholder="输入问题或记录..." rows="1"></textarea>
+                    <button id="main-send-btn" class="input-bar-send"><i class="fas fa-arrow-up"></i></button>
+                </div>
+            </div>
+
+            <div id="upload-menu" class="upload-menu" style="display:none;">
+                <div class="upload-menu-overlay" id="upload-menu-overlay"></div>
+                <div class="upload-menu-content">
+                    <button class="upload-menu-item" id="menu-camera-btn">
+                        <div class="upload-menu-icon"><i class="fas fa-camera"></i></div>
+                        <span>拍照上传</span>
+                    </button>
+                    <button class="upload-menu-item" id="menu-album-btn">
+                        <div class="upload-menu-icon"><i class="fas fa-images"></i></div>
+                        <span>从相册选择</span>
+                    </button>
+                    <button class="upload-menu-item" id="menu-manual-btn">
+                        <div class="upload-menu-icon"><i class="fas fa-edit"></i></div>
+                        <span>手动添加记录</span>
+                    </button>
+                    <button class="upload-menu-item upload-menu-cancel" id="menu-cancel-btn">
+                        <span>取消</span>
+                    </button>
+                </div>
+            </div>
+
+            <input type="file" id="file-input-camera" accept="image/*" capture="environment" style="display:none;" />
+            <input type="file" id="file-input-album" accept="image/*" multiple style="display:none;" />
+        </div>
+
+        <!-- 悬浮语音按钮 -->
+        <button id="floating-voice-btn" class="floating-voice-btn" style="display:none;">
+            <i class="fas fa-microphone"></i>
+            <span class="voice-label">长按语音记录</span>
+        </button>
+
+        <!-- 录音提示气泡 -->
+        <div id="recording-hint" class="recording-hint" style="display:none;">
+            正在聆听...
+        </div>
+
+        <!-- 医疗记录面板 -->
+        <div id="records-overlay" class="panel-overlay"></div>
+        <div id="records-panel" class="slide-panel records-panel">
+            <div class="panel-header">
+                <button class="icon-btn" id="records-back-btn"><i class="fas fa-arrow-left"></i></button>
+                <h2>医疗记录</h2>
+            </div>
+            <div id="all-records-list" class="panel-content records-list"></div>
+        </div>
+
+        <!-- 健康统计面板 -->
+        <div id="stats-overlay" class="panel-overlay"></div>
+        <div id="stats-panel" class="slide-panel stats-panel">
+            <div class="panel-header">
+                <button class="icon-btn" id="stats-back-btn"><i class="fas fa-arrow-left"></i></button>
+                <h2>健康统计</h2>
+            </div>
+            <div class="panel-content stats-content">
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <div class="stat-icon"><i class="fas fa-notes-medical"></i></div>
+                        <span class="stat-label">总就诊次数</span>
+                        <div class="stat-value" id="total-visits">0<span class="stat-unit">次</span></div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon"><i class="fas fa-history"></i></div>
+                        <span class="stat-label">近半年就诊</span>
+                        <div class="stat-value" id="half-year-visits">0<span class="stat-unit">次</span></div>
+                    </div>
+                </div>
+                <div class="stat-card-full">
+                    <h3>健康趋势分析</h3>
+                    <p id="health-analysis">暂无足够数据进行分析，请先添加就诊记录。</p>
+                </div>
+                <div class="stat-card-full">
+                    <h3>历史诊断</h3>
+                    <div id="diagnosis-tags" class="diagnosis-tags"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 记录详情面板 -->
+        <div id="detail-overlay" class="panel-overlay"></div>
+        <div id="detail-panel" class="slide-panel detail-panel">
+            <div class="panel-header">
+                <button class="icon-btn" id="detail-back-btn"><i class="fas fa-bars"></i></button>
+                <h2>医疗档案</h2>
+            </div>
+            <div id="detail-content" class="panel-content detail-content"></div>
+        </div>
+
+        <!-- 添加记录面板 -->
+        <div id="add-record-overlay" class="panel-overlay"></div>
+        <div id="add-record-panel" class="slide-panel add-record-panel">
+            <div class="panel-header">
+                <button class="icon-btn" id="add-record-back-btn"><i class="fas fa-arrow-left"></i></button>
+                <h2>添加记录</h2>
+            </div>
+            <div class="panel-content form-container">
+                <div class="form-group">
+                    <label>就诊日期</label>
+                    <input type="date" id="visit-date" />
+                </div>
+                <div class="form-group">
+                    <label>医院名称 *</label>
+                    <input type="text" id="visit-hospital" placeholder="如：市第一医院" />
+                </div>
+                <div class="form-group">
+                    <label>科室</label>
+                    <input type="text" id="visit-department" placeholder="如：内科" />
+                </div>
+                <div class="form-group">
+                    <label>医生</label>
+                    <input type="text" id="visit-doctor" placeholder="请输入医生姓名" />
+                </div>
+                <div class="form-group">
+                    <label>主诉</label>
+                    <textarea id="visit-complaint" placeholder="请描述您的主要症状"></textarea>
+                </div>
+                <div class="form-group">
+                    <label>诊断结果 *</label>
+                    <input type="text" id="visit-diagnosis" placeholder="如：上呼吸道感染" />
+                </div>
+                <div class="form-group">
+                    <label>备注</label>
+                    <textarea id="visit-notes" placeholder="其他需要记录的信息"></textarea>
+                </div>
+                <button id="save-record-btn" class="btn-primary">保存记录</button>
+            </div>
+        </div>
+
+        <!-- 全屏图片查看器 -->
+        <div id="image-viewer" class="image-viewer" style="display:none;">
+            <div class="image-viewer-header">
+                <button class="icon-btn" id="image-viewer-close"><i class="fas fa-times"></i></button>
+                <span class="image-viewer-title">图片查看</span>
+                <div class="header-spacer"></div>
+            </div>
+            <div class="image-viewer-body">
+                <img id="image-viewer-img" src="" alt="医疗图片" />
+            </div>
+        </div>
+    </div>
+
+    <!-- 侧边抽屉（放在#app外面，避免overflow:hidden裁剪） -->
+    <div id="drawer-overlay" class="drawer-overlay"></div>
+    <div id="drawer" class="drawer">
+        <div class="drawer-user-section">
+            <div id="drawer-user-avatar" class="drawer-avatar logged-out">
+                <i class="fas fa-user"></i>
+            </div>
+            <div id="drawer-user-info" class="drawer-user-info">
+                <span class="drawer-username">点击登录</span>
+                <span class="drawer-user-desc">登录后管理您的健康数据</span>
+            </div>
+        </div>
+        <div class="drawer-menu">
+            <button class="drawer-item" id="drawer-history">
+                <i class="fas fa-clipboard-list"></i>
+                <span>医疗记录</span>
+            </button>
+            <button class="drawer-item" id="drawer-stats">
+                <i class="fas fa-chart-pie"></i>
+                <span>健康统计</span>
+            </button>
+        </div>
+    </div>
+
+    <script src="config.js"></script>
+    <script src="core.js"></script>
+    <script src="image-store.js"></script>
+    <script src="api-service.js"></script>
+    <script src="sync-service.js"></script>
+    <script src="ai-service.js"></script>
+    <script src="app.js"></script>
+</body>
+</html>
