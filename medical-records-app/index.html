@@ -38,7 +38,7 @@
         <!-- 主界面 -->
         <div id="main-screen" class="screen">
             <div class="header">
-                <button id="drawer-btn" class="icon-btn"><i class="fas fa-bars"></i></button>
+                <div class="header-btn-placeholder"></div>
                 <h1>医疗档案</h1>
                 <div class="header-spacer"></div>
             </div>
@@ -213,6 +213,7 @@
     </div>
 
     <!-- 侧边抽屉（放在#app外面，避免overflow:hidden裁剪） -->
+    <button id="drawer-btn" class="drawer-btn-fixed"><i class="fas fa-bars"></i></button>
     <div id="drawer-overlay" class="drawer-overlay"></div>
     <div id="drawer" class="drawer">
         <div class="drawer-user-section">

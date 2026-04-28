@@ -134,6 +134,36 @@ body {
     z-index: 100;
 }
 
+.drawer-btn-fixed {
+    position: fixed;
+    top: 0;
+    left: 0;
+    z-index: 55;
+    background: transparent;
+    border: none;
+    color: var(--text-tertiary);
+    font-size: 20px;
+    cursor: pointer;
+    width: 56px;
+    height: var(--nav-height);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: var(--radius-full);
+    transition: var(--transition);
+    -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation;
+}
+
+.drawer-btn-fixed:hover, .drawer-btn-fixed:active {
+    background: rgba(30, 37, 50, 0.8);
+}
+
+.header-btn-placeholder {
+    width: 40px;
+    height: 40px;
+}
+
 /* 登录界面 */
 #login-screen {
     position: absolute;

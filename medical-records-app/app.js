@@ -196,19 +196,23 @@
 
     function showLoginScreen() {
         var loginScreen = document.getElementById('login-screen');
+        var drawerBtn = document.getElementById('drawer-btn');
         loginScreen.classList.remove('hidden');
         loginScreen.classList.add('active');
+        if (drawerBtn) drawerBtn.style.display = 'none';
     }
 
     function showMainScreen() {
         var loginScreen = document.getElementById('login-screen');
         var mainScreen = document.getElementById('main-screen');
         var voiceBtn = document.getElementById('floating-voice-btn');
+        var drawerBtn = document.getElementById('drawer-btn');
 
         loginScreen.classList.add('hidden');
         loginScreen.classList.remove('active');
         mainScreen.classList.add('active');
         voiceBtn.style.display = 'flex';
+        if (drawerBtn) drawerBtn.style.display = 'flex';
     }
 
     function adjustVoiceBtnPosition() {
@@ -1070,6 +1074,10 @@
         if (!drawerBtn || !drawer || !drawerOverlay) {
             console.log('Drawer elements not found');
             return;
+        }
+
+        if (!isLoggedIn) {
+            drawerBtn.style.display = 'none';
         }
 
         function openDrawer() {
